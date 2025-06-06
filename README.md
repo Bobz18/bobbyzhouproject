@@ -105,7 +105,7 @@ I display the head of the cleaned DataFrame below:
 I examined the distribution of `rating` values across the dataset. The histogram reveals that the ratings are heavily skewed to the right, with most reviews being 4 or 5 stars. This suggests that users tend to leave reviews only when they have strong (mostly positive) experiences with recipes.
 
 <iframe
-    src = "rating-distribution.html"
+    src = "graphs/rating-distribution.html"
     width = "800"
     height = "600"
     frameborder = "0"
@@ -116,12 +116,28 @@ This bias in ratings could affect model predictions, as the model may overfit to
 
 ---
 
+### Recipe Preparation Time Distribution
+
+To understand how long recipes typically take to prepare, I plotted the distribution of preparation time (in minutes), removing extreme outliers using IQR filtering. The histogram below shows that most recipes fall between 0 and 60 minutes, with a sharp drop in frequency after that point. A large concentration of recipes take between 10 to 40 minutes to make, and the distribution is clearly right-skewed.
+
+<iframe
+    src="graphs/minutes_distribution.html"
+    width="800"
+    height="600"
+    frameborder="0"
+    style="margin: 0; padding: 0; display: block;"
+></iframe>
+
+This pattern suggests that most users prefer quicker recipes that can be completed within an hour — likely due to time constraints or everyday convenience. Recipes requiring longer preparation times are far less common, possibly because they cater to niche or special-occasion cooking. The skewness in time may also affect model behavior, favoring faster recipes as they dominate the dataset.
+
+---
+
 ### Bivariate Analysis
 
 To assess relationships between variables, I explored whether recipes tagged with “meat” received different ratings compared to those without. Using a kernel density estimate (KDE) plot, I found that the inclusion of meat tags does not appear to significantly impact average recipe rating.
 
 <iframe
-    src = "assets/bivariate_1.html"
+    src = "graphs/.html"
     width = "800"
     height = "600"
     frameborder = "0"
@@ -132,19 +148,56 @@ This analysis helped inform my choice of features for model development and fair
 
 ---
 
+### Complexity and Time vs. Recipe Rating (3D Plot)
+
+To explore how recipe complexity and preparation time relate to user ratings, I created a 3D scatter plot using `minutes`, `n_ingredients`, and `n_steps`, with color representing the `rating`. Each point represents a single recipe, and outliers in preparation time were removed using IQR filtering for clarity.
+
+<iframe
+    src="graphs/3D-rating-distribution.html"
+    width="900"
+    height="700"
+    frameborder="0"
+    style="margin: 0; padding: 0; display: block;"
+></iframe>
+
+The plot reveals that high-rated recipes (shown in yellow) span across a wide range of time and complexity values, but tend to cluster more densely around moderate preparation times and lower ingredient/step counts. This suggests that while users may reward recipes that are relatively simple and quick, highly rated dishes are not restricted to minimal effort — they may also include thoughtfully crafted, time-intensive options that deliver high satisfaction. There is no sharp linear relationship, implying that other factors beyond time and complexity (such as taste or clarity of instructions) likely influence ratings.
+
+
 ### Interesting Aggregates
+#### Preparation Time and Complexity by Rating
 
-I also computed summary statistics for several numerical features by rating category. The table below shows the average `minutes`, `n_steps`, and `n_ingredients` for each rating level from 1 to 5:
+To examine how recipe complexity and preparation time relate to ratings, I computed average values for `minutes`, `n_steps`, and `n_ingredients` grouped by rating level. The results are shown below:
 
-| rating | minutes | n_steps | n_ingredients |
-|--------|---------|---------|----------------|
-| 1      | 38.72   | 10.33   | 8.80           |
-| 2      | 39.63   | 10.40   | 9.13           |
-| 3      | 38.09   | 9.74    | 9.10           |
-| 4      | 36.47   | 9.43    | 9.00           |
-| 5      | 36.36   | 9.71    | 8.95           |
+| Rating | Minutes | Steps | Ingredients |
+|--------|---------|--------|-------------|
+| 1      | 99.67   | 10.63  | 8.91        |
+| 2      | 98.02   | 10.70  | 9.23        |
+| 3      | 87.50   | 9.99   | 9.20        |
+| 4      | 91.59   | 9.58   | 9.10        |
+| 5      | 106.92  | 9.98   | 9.05        |
 
-This pivot table suggests a possible trend that recipes with higher ratings may tend to be simpler (require less time or fewer steps/ingredients), though the differences are subtle. These insights helped inform which variables to prioritize in modeling stages.
+
+The complexity-related metrics (`minutes`, `n_steps`, and `n_ingredients`) reveal interesting trends across rating levels. From ratings 1 to 3, there is a general decrease in both preparation time and number of steps, which may suggest that simpler or quicker recipes are slightly more favored. Rating 4 follows this pattern with the lowest average step count, but at rating 5, the average preparation time spikes noticeably, while step and ingredient counts remain moderate.
+
+This pattern may indicate that while users appreciate simplicity, the highest-rated recipes are not necessarily the fastest or easiest to make. Instead, they might strike a desirable balance between effort and reward—requiring more time but not necessarily more steps or complexity. The uptick in time at rating 5 suggests that top-rated recipes may emphasize thoughtful preparation or longer cook times that enhance flavor or texture, even if the ingredient count remains stable.
+
+#### Recipe Characteristics by Rating
+
+To better understand how recipe characteristics vary by rating, I computed average values for several nutritional and time-based features grouped by rating. The table below summarizes the mean `minutes`, `calories`, `total_fat`, `sugar`, `protein`, `saturated_fat`, and `carbohydrates` for recipes rated from 1 to 5:
+
+| Rating | Calories | Carbohydrates | Minutes | Protein | Saturated Fat | Sugar  | Total Fat |
+|--------|----------|----------------|---------|---------|----------------|--------|------------|
+| 1      | 486.60   | 16.40          | 99.67   | 34.06   | 46.68          | 88.01  | 37.06      |
+| 2      | 446.60   | 15.04          | 98.02   | 34.31   | 42.88          | 75.17  | 32.77      |
+| 3      | 425.79   | 13.68          | 87.45   | 34.86   | 40.09          | 65.55  | 31.64      |
+| 4      | 405.04   | 12.83          | 91.59   | 34.05   | 36.43          | 56.79  | 29.94      |
+| 5      | 415.21   | 13.04          | 106.92  | 32.64   | 39.23          | 63.08  | 31.79      |
+
+Overall, the nutritional metrics (`calories`, `carbohydrates`, `protein`, `saturated_fat`, `sugar`, and `total_fat`) show a fairly clear downward trend as the rating increases from 1 to 4. Recipes with lower ratings tend to have higher energy content and richer nutritional profiles — for example, average calories drop from about 486 at rating 1 to around 405 at rating 4, along with noticeable declines in sugar, fat, and carbohydrates.
+
+This suggests that users may associate lower-calorie, lower-sugar recipes with higher quality or satisfaction, potentially reflecting health-conscious preferences. However, at rating 5, some metrics such as `minutes`, `saturated_fat`, and `carbohydrates` tick upward slightly. This reversal could imply that the highest-rated recipes balance nutrition with enhanced flavor or complexity — they may be more indulgent, take longer to prepare, or use richer ingredients to achieve superior taste.
+
+In short, while there’s a general trend toward healthier profiles as rating increases, rating 5 recipes may reflect a nuanced preference: dishes that are worth the extra time or richness for a top-tier experience.
 
 
 ## Missingness Mechanism
@@ -178,13 +231,13 @@ I suspect that users may be less likely to leave a rating for recipes that invol
 
 I conducted a permutation test by randomly shuffling the missingness indicator for `rating` 1,000 times. The resulting distribution of the test statistic, along with the observed value, is shown below:
 
-<iframe
-    src = "graphs/MAR_n_steps.html"
-    width = "800"
-    height = "600"
-    frameborder = "0"
-    style="margin: 0; padding: 0; display: block;"
-></iframe>
+<iframe 
+    src="graphs/MAR_n_steps.html" 
+    width="800" 
+    height="600" 
+    frameborder="0" 
+    style="margin: 0; padding: 0; display: block;">
+</iframe>
 
 The p-value was approximately 0.0, which is below the significance level of 0.01. Therefore, I reject the null hypothesis and conclude that the missingness of `rating` is **MAR**, conditional on `n_steps`.
 
@@ -265,3 +318,71 @@ The observed difference in means was positive, indicating that meatless recipes 
 ### Conclusion
 
 Since I get p-value = 0.0 < 0.05, I reject the null hypothesis and conclude that recipes without meat tags tend to receive higher ratings than those with meat tags. This suggests that meat inclusion may negatively influence how recipes are rated by users.
+
+## Framing a Prediction
+
+Based on my earlier analysis, I aim to **predict the rating of a recipe** as a multi-class classification problem. Since `rating` takes on integer values from 1 to 5, I treat it as a categorical, ordinal variable.
+
+I chose `rating` as the response variable because it is the most visible and influential metric that users consider when browsing recipes online. Additionally, most of my prior exploratory analysis centered around understanding what affects `rating`, giving me a strong foundation for identifying relevant features.
+
+In particular, I found that both `minutes` (preparation time) and `contains_meat` (meat inclusion) were significantly associated with recipe ratings. Therefore, I will use these two variables to construct features for my baseline classification model.
+
+To assess the performance of the model, I will evaluate two metrics:
+
+1. **Accuracy**  
+   Accuracy measures the overall proportion of correct predictions. It provides a high-level indication of how well the model predicts ratings using `minutes` and `contains_meat` as inputs.
+
+2. **F1 Score**  
+   The F1 score balances precision and recall, making it useful for understanding how well the model performs across all rating categories—especially in the presence of class imbalance. It also helps assess whether the model is generating excessive false positives or false negatives, which is important for evaluating fairness and reliability.
+
+
+## Baseline Model
+
+For my baseline model, I used a **Random Forest Classifier** to predict recipe ratings based on two key features: `minutes` and `contains_meat`. These features were chosen based on earlier exploratory analysis that indicated their relevance to rating outcomes.
+
+To prepare the data:
+
+1. **`minutes`**  
+   This is a continuous numerical feature representing the preparation time of a recipe. I standardized this column using `StandardScaler()` so that the model could interpret whether a recipe takes more or less time than average, regardless of scale.
+
+2. **`contains_meat`**  
+   This is a boolean feature indicating whether a recipe includes meat. Since prior analysis showed meaningful rating differences between meat and non-meat recipes, I retained this variable in data cleaning steps and converted it into an integer (1 for `True`, 0 for `False`) using a `FunctionTransformer`.
+
+I did not tune any hyperparameters — the Random Forest was run with default settings. The dataset was split using `train_test_split` with 80% of data used for training and 20% held out for testing.
+
+---
+
+### Evaluation Results
+
+Here are the performance metrics from the baseline model:
+
+- **Accuracy:** `0.776`
+- **Macro F1-Score:** `0.175`
+- **Per-Class F1-Scores:** `[0.0, 0.0, 0.0, 0.0, 0.87]`
+
+Despite the relatively high accuracy (about 77.6%), the **F1-score reveals a critical issue**: the model performs well only for recipes rated 5, while it completely fails to predict ratings 1 through 4. The high accuracy is misleading, as it is driven by the class imbalance in the dataset — around 95% of recipes have ratings of 4 or 5.
+
+Upon inspecting the predictions, I found that the model mostly outputs only 4s and 5s. This reflects the skewed distribution of ratings and explains the poor macro F1-score. The model, while technically "accurate", is not fair or informative across rating categories.
+
+---
+
+### Cross-Validation Results
+
+To better evaluate the reliability of my baseline model, I performed **5-fold cross-validation** using both accuracy and F1 score as evaluation metrics. This technique helps assess the model’s performance across different subsets of the data and provides a more robust estimate of generalization.
+
+Here are the averaged results across the five folds:
+
+- **Mean Accuracy:** `0.7753`
+- **Mean F1 Score (weighted):** `0.6773`
+
+These results are consistent with the earlier train-test split, reaffirming that the model maintains high accuracy. However, the **weighted F1 score** is significantly higher than the earlier macro F1 score (which was only 0.175). This is because the **weighted F1 score gives more importance to dominant classes** (like ratings 4 and 5), whereas the macro score weighs each class equally.
+
+In short, while the model appears effective based on overall accuracy and weighted F1, it still fails to meaningfully capture the minority classes (ratings 1–3), which is masked by the imbalanced label distribution. This reinforces the need to address class imbalance and refine evaluation strategies in future modeling stages.
+
+---
+
+### Next Steps
+
+As it stands, this baseline model is not practically useful. It performs similarly to a naive classifier that always predicts 5. To improve the model, I will need to address the **class imbalance** and enhance the model’s ability to distinguish lower-rated recipes. This will be a priority in the final modeling stage.
+
+
