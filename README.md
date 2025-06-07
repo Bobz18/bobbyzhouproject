@@ -137,7 +137,7 @@ This pattern suggests that most users prefer quicker recipes that can be complet
 To assess relationships between variables, I explored whether recipes tagged with “meat” received different ratings compared to those without. Using a kernel density estimate (KDE) plot, I found that the inclusion of meat tags does not appear to significantly impact average recipe rating.
 
 <iframe
-    src = "graphs/.html"
+    src = "graphs/bivariate_distribution.html"
     width = "800"
     height = "600"
     frameborder = "0"
@@ -321,7 +321,7 @@ Since I get p-value = 0.0 < 0.05, I reject the null hypothesis and conclude that
 
 ## Framing a Prediction
 
-Based on my earlier analysis, I aim to **predict the rating of a recipe** as a multi-class classification problem. Since `rating` takes on integer values from 1 to 5, I treat it as a categorical, ordinal variable.
+Based on my earlier analysis, I aim to **predict the rating of a recipe** as a **multi-class classification problem**. Since `rating` takes on integer values from 1 to 5, I treat it as a categorical, ordinal variable.
 
 I chose `rating` as the response variable because it is the most visible and influential metric that users consider when browsing recipes online. Additionally, most of my prior exploratory analysis centered around understanding what affects `rating`, giving me a strong foundation for identifying relevant features.
 
@@ -364,25 +364,79 @@ Despite the relatively high accuracy (about 77.6%), the **F1-score reveals a cri
 
 Upon inspecting the predictions, I found that the model mostly outputs only 4s and 5s. This reflects the skewed distribution of ratings and explains the poor macro F1-score. The model, while technically "accurate", is not fair or informative across rating categories.
 
----
-
-### Cross-Validation Results
-
-To better evaluate the reliability of my baseline model, I performed **5-fold cross-validation** using both accuracy and F1 score as evaluation metrics. This technique helps assess the model’s performance across different subsets of the data and provides a more robust estimate of generalization.
-
-Here are the averaged results across the five folds:
-
-- **Mean Accuracy:** `0.7753`
-- **Mean F1 Score (weighted):** `0.6773`
-
-These results are consistent with the earlier train-test split, reaffirming that the model maintains high accuracy. However, the **weighted F1 score** is significantly higher than the earlier macro F1 score (which was only 0.175). This is because the **weighted F1 score gives more importance to dominant classes** (like ratings 4 and 5), whereas the macro score weighs each class equally.
-
-In short, while the model appears effective based on overall accuracy and weighted F1, it still fails to meaningfully capture the minority classes (ratings 1–3), which is masked by the imbalanced label distribution. This reinforces the need to address class imbalance and refine evaluation strategies in future modeling stages.
-
+<iframe
+    src = "graphs/rating_distribution_normalized.html"
+    width = "800"
+    frameborder = "0"
+    style="margin: 0; padding: 0; display: block;"
+></iframe>
 ---
 
 ### Next Steps
 
 As it stands, this baseline model is not practically useful. It performs similarly to a naive classifier that always predicts 5. To improve the model, I will need to address the **class imbalance** and enhance the model’s ability to distinguish lower-rated recipes. This will be a priority in the final modeling stage.
+
+## Final Model
+
+In my final model, I greatly expanded the feature space and implemented a comprehensive pipeline using **GridSearchCV** to tune hyperparameters for a RandomForestClassifier. The design and transformation of each feature group were as follows:
+
+Datetime Features (date, submitted):
+These columns were originally stored as datetime objects. Since preferences for recipes may vary over time—due to seasonality (e.g. enjoying cold dishes in summer) or changing food trends. I extracted temporal components such as day, month, year, and dayofweek. These were then standardized to ensure they contributed equally during model training.
+
+Textual Features (description, review):
+These two columns contain user-written content and summaries of recipes. Instead of analyzing them separately, I combined them using a custom transformer and applied TfidfVectorizer to capture key phrases or terms that may influence ratings. This helped identify text patterns related to user satisfaction.
+
+Ingredients (ingredients):
+This column is a list of strings representing ingredients used in each recipe. I flattened the list into a single string per row and applied TfidfVectorizer to pick up individual ingredient signals that could predict user preferences.
+
+Binary Feature (contains_meat):
+This column indicates whether the recipe includes meat. As used in the baseline model, I kept this feature and transformed the Boolean values into integers. It remains a relevant indicator for capturing dietary-based preferences.
+
+Numerical Features (minutes, n_steps, n_ingredients):
+These continuous features represent the preparation time, the number of steps, and the number of ingredients for each recipe. They were scaled using StandardScaler to normalize their magnitudes and better support the Random Forest algorithm.
+
+Model and Class Imbalance Handling:
+I used a RandomForestClassifier with class_weight='balanced' to account for the skewed distribution in `rating` values. This is particularly important for improving performance on minority classes (e.g. low-rated recipes), which were underrepresented in the data.
+
+Hyperparameter Tuning:
+I applied GridSearchCV over a parameter grid that searched across:
+
+n_estimators: [200, 300]
+
+max_depth: [None, 10, 20]
+
+min_samples_split: [2, 6]
+
+This allowed us to identify the optimal combination of hyperparameters to improve generalization.
+
+In my final model, the test statistics were as follows:
+- **Accuracy:** `0.754`
+- **F1-Score - Averaged:** `0.30376564`
+
+Compared to my baseline model, the final model did not improve in terms of accuracy. However, the F1-score increased a lot, indicating a significant improvement in handling class imbalance.
+
+This suggests that while the model may have introduced more misclassifications for the dominant classes (ratings of 4 or 5), it became substantially better at identifying and correctly predicting the less frequent lower-rated recipes. This trade-off is likely the result of setting class_weight='balanced' in the RandomForestClassifier, which forces the model to pay more attention to underrepresented classes.
+
+## Fairness Analysis
+
+For my fairness analysis, I ask: Does the inclusion of meat affect how my model predicts recipe ratings? To explore this, I split the test set into two groups based on the `contains_meat` column: recipes that include meat and those that do not. The sample sizes are sufficient for reliable comparison:
+
+- Recipes without meat (contains_meat == False): 167419
+
+- Recipes with meat (contains_meat == True): 51974
+
+The high number of recipes suggests that patterns shown by my model when predicting this group is probably accurate rather than by chance alone.
+
+To assess the fairness of my model, I examine whether the model performs differently for recipes that contain meat (contains_meat == True) versus those that do not. I define fairness in terms of precision parity, focusing on whether the model gives similarly accurate predictions for both groups.
+
+I compute the macro-average precision score separately for each group and take the difference between the two (Group1 − Group2). This gives us the observed precision difference.
+
+To predict if my model is fair for recipes with/without meat, I conduct a permutation test using the hypothesis pair below:
+1. **Null Hypothesis:** The model is fair. The difference in macro precision between recipes with and without meat is zero, and any observed difference is due to random chance.
+2. **Alternative Hypothesis:** The model is unfair. The macro precision for meat-containing recipes is lower than for non-meat recipes.
+3. **Test Statistic:** **difference in macro precision** between the **recipes with meat** and **recipes without meat**.
+4. **Significance Level:** 0.01
+
+After performing the permutation test by randomly shuffling the `contains_meat` labels, I obtained a p-value of 0.623. Since this value is greater than my chosen significance level of 0.01, I fail to reject the null hypothesis. This suggests that the observed difference in precision between meat and non-meat recipes could be due to chance, and therefore, I conclude that there is no statistically significant evidence to suggest that the model is unfair.
 
 
