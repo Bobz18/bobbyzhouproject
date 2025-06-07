@@ -444,15 +444,6 @@ To predict if my model is fair for recipes with/without meat, I conduct a permut
 After performing the permutation test by randomly shuffling the `contains_meat` labels, I obtained a p-value of 0.623. Since this value is greater than my chosen significance level of 0.01, I fail to reject the null hypothesis. This suggests that the observed difference in precision between meat and non-meat recipes could be due to chance, and therefore, I conclude that there is no statistically significant evidence to suggest that the model is unfair.
 
 
-<iframe
-    src = "graphs/rating_distribution_normalized.html"
-    width = "800"
-    height = "600"
-    frameborder = "0"
-    style="margin: 0; padding: 0; display: block;"
-></iframe>
-
-
 
 
 
