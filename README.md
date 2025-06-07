@@ -364,15 +364,17 @@ Despite the relatively high accuracy (about 77.6%), the **F1-score reveals a cri
 
 Upon inspecting the predictions, I found that the model mostly outputs only 4s and 5s. This reflects the skewed distribution of ratings and explains the poor macro F1-score. The model, while technically "accurate", is not fair or informative across rating categories.
 
+
 <iframe
     src = "graphs/rating_distribution_normalized.html"
     width = "800"
+    height = "600"
     frameborder = "0"
     style="margin: 0; padding: 0; display: block;"
 ></iframe>
 
 
----
+
 
 ### Next Steps
 
