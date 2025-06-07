@@ -303,7 +303,7 @@ I then conducted a hypothesis test to examine whether the average rating differs
 
 **Alternative Hypothesis (H₁)**: The average rating for recipes without meat tags is higher than that for recipes with meat tags.
 
-**Test Statistic**: The difference in mean rating (`mean_rating_no_meat - mean_rating_meat`).
+**Test Statistic**: The difference in mean rating (`mean_rating_no_meat` - `mean_rating_meat`).
 
 **Significance Level**: 0.05
 
@@ -405,11 +405,11 @@ I used a RandomForestClassifier with class_weight='balanced' to account for the 
 Hyperparameter Tuning:
 I applied GridSearchCV over a parameter grid that searched across:
 
-n_estimators: [200, 300]
+n_estimators: [100, 200]
 
 max_depth: [None, 10, 20]
 
-min_samples_split: [2, 6]
+min_samples_split: [2, 5]
 
 This allowed us to identify the optimal combination of hyperparameters to improve generalization.
 
@@ -442,5 +442,17 @@ To predict if my model is fair for recipes with/without meat, I conduct a permut
 4. **Significance Level:** 0.01
 
 After performing the permutation test by randomly shuffling the `contains_meat` labels, I obtained a p-value of 0.623. Since this value is greater than my chosen significance level of 0.01, I fail to reject the null hypothesis. This suggests that the observed difference in precision between meat and non-meat recipes could be due to chance, and therefore, I conclude that there is no statistically significant evidence to suggest that the model is unfair.
+
+
+<iframe
+    src = "graphs/rating_distribution_normalized.html"
+    width = "800"
+    height = "600"
+    frameborder = "0"
+    style="margin: 0; padding: 0; display: block;"
+></iframe>
+
+
+
 
 
